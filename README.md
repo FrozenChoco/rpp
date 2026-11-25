@@ -60,4 +60,3 @@ switch (host.result().outcome) { /* Success, DeviceError, Timeout, Uncertain */ 
 | `Uncertain` | Retries exhausted for a **non-idempotent** command (increment) | Do **not** blindly retry; issue a `ReadCounter` to learn the state |
 
 See `docs/DESIGN.md` for details.
-# rpp
