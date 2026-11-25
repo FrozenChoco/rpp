@@ -50,6 +50,7 @@ FaultAction Channel::next_action() {
         return a;
     }
     if (rnd_.dup_permille && rand32() % 1000 < rnd_.dup_permille) a.copies = 2;
+    if (rnd_.corrupt_permille && rand32() % 1000 < rnd_.corrupt_permille) a.corrupt = true;
     if (rnd_.max_delay_ms) {
         a.delay_ms = rand_range(rnd_.min_delay_ms, rnd_.max_delay_ms);
         a.dup_gap_ms = rand_range(0, rnd_.max_delay_ms);
@@ -74,8 +75,14 @@ void Channel::send(const Frame& f, TimeMs now) {
     if (a.drop) { ++stats_.dropped; return; }
     uint8_t copies = a.copies < 1 ? 1 : (a.copies > 4 ? 4 : a.copies);
     stats_.duplicated += copies - 1u;
-    for (uint8_t i = 0; i < copies; ++i)
-        enqueue(f, now + base_latency_ + a.delay_ms + i * a.dup_gap_ms);
+    for (uint8_t i = 0; i < copies; ++i) {
+        Frame delivered = f;
+        if (i == 0 && a.corrupt && delivered.type == FrameType::Response && delivered.fec_present) {
+            delivered.fec_a.value ^= 1u;
+            ++stats_.corrupted;
+        }
+        enqueue(delivered, now + base_latency_ + a.delay_ms + i * a.dup_gap_ms);
+    }
 }
 
 bool Channel::receive(Frame& out, TimeMs now) {

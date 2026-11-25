@@ -13,6 +13,7 @@ Frame Peripheral::execute(const Frame& req) {
         default: rsp.status = Status::UnknownCommand; break;
     }
     rsp.value = counter_;
+    encode_response_fec(rsp);
     ++stats_.executed;
     return rsp;
 }
@@ -25,6 +26,7 @@ bool Peripheral::on_request(const Frame& req, Frame& rsp) {
     if (has_last_ && req.seq == last_seq_) {
         // Retransmission or network duplicate: replay, never re-execute.
         rsp = last_rsp_;
+        encode_response_fec(rsp);
         ++stats_.duplicates_served;
         return true;
     }

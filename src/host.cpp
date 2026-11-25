@@ -77,6 +77,10 @@ void Host::poll(TimeMs now) {
     // 1. Responses first, so one arriving exactly at the deadline still counts.
     Frame f;
     while (port_.receive(f, now)) {
+        if (f.type == FrameType::Response && !decode_response_fec(f)) {
+            ++stats_.ignored_frames;
+            continue;
+        }
         bool match = state_ == State::Pending && f.type == FrameType::Response &&
                      f.seq == cur_seq_ && f.cmd == cur_cmd_;
         if (!match) { ++stats_.ignored_frames; continue; }  // stale, duplicate, or idle

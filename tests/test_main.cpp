@@ -42,6 +42,7 @@ struct Sim {
 
 static FaultAction drop() { FaultAction a; a.drop = true; return a; }
 static FaultAction delay(uint32_t ms) { FaultAction a; a.delay_ms = ms; return a; }
+static FaultAction corrupt() { FaultAction a; a.corrupt = true; return a; }
 static FaultAction dup(uint8_t copies, uint32_t gap) {
     FaultAction a; a.copies = copies; a.dup_gap_ms = gap; return a;
 }
@@ -222,6 +223,15 @@ static void test_device_error_is_reported() {
     CHECK(s.host.result().status == Status::UnknownCommand);
 }
 
+static void test_peripheral_response_fec_corrects_one_corruption() {
+    Sim s;
+    s.net.to_host().push_fault(corrupt());
+    TxResult r = s.run(Command::Increment);
+    CHECK(r.outcome == Outcome::Success);
+    CHECK(r.value == 1 && s.dev.counter() == 1);
+    CHECK(s.net.to_host().stats().corrupted == 1);
+}
+
 static void test_random_fault_soak() {
     uint32_t total_success = 0, total_uncertain = 0, total_timeout = 0, total_retx = 0;
     for (uint32_t seed = 1; seed <= 300; ++seed) {
@@ -296,6 +306,7 @@ int main() {
         T(test_clock_wraparound),
         T(test_peripheral_unit_semantics),
         T(test_device_error_is_reported),
+        T(test_peripheral_response_fec_corrects_one_corruption),
         T(test_random_fault_soak),
     };
     int failed_tests = 0;

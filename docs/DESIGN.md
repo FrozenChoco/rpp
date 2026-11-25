@@ -14,7 +14,8 @@
   it from a transport port.
 * **SimTransport** — two `Channel`s (one per direction) behind the `ITransport`
   interface that Host and Peripheral depend on, so a real link could replace it.
-  Faults per frame: drop, duplicate (up to 4 copies), delay (⇒ reordering).
+  Faults per frame: drop, duplicate (up to 4 copies), delay (⇒ reordering), or
+  one-copy logical corruption.
   Faults are either *scripted* (a FIFO of `FaultAction`s, used for deterministic
   tests) or *random* (seeded xorshift32, used for the soak test).
 * The simulated clock is driven by the test/demo loop (1 tick = 1 ms), so every
@@ -83,8 +84,9 @@ rewrite the reported outcome.
 
 ## Known limitations
 
-* **No byte-level framing or CRC.** Frames are passed as structs. Corruption
-  would need a checksum and decode path.
+* **No byte-level framing or checksum.** Frames are passed as structs. Response
+  FEC corrects one logical copy, but cannot detect or correct all arbitrary
+  multi-copy corruption; a checksum or stronger code would be needed on a real wire.
 * **Peripheral remembers only the last transaction.** Sufficient for one
   outstanding transaction. Pipelining would need a window of cached responses.
 * **Peripheral reset / host reset is out of scope.** After a peripheral reset
@@ -94,3 +96,8 @@ rewrite the reported outcome.
 * **An `Increment` followed by `Uncertain` is not auto-resolved**; callers decide.
 * Counter is `uint32_t` and wraps silently.
 * Simulation is single-threaded; thread-safety is not provided.
+
+* Peripheral responses use fixed triple-redundancy FEC: the peripheral places
+  the response payload in the primary frame and two redundant copies. The host
+  accepts when two copies agree and rejects ambiguous two-copy disagreements.
+  Requests and one-sided link loss remain unrecovered and use retransmission.

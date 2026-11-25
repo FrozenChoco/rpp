@@ -1,8 +1,8 @@
 # Resilient Peripheral Communication Protocol
 
 A small, heap-free C++17 implementation of a reliable host ⇄ peripheral command
-protocol on top of a transport that can **lose, delay, reorder and duplicate**
-messages.
+protocol on top of a transport that can **lose, delay, reorder, duplicate and
+corrupt one copy of messages**.
 
 The peripheral holds a counter. The host can `Increment` it and `ReadCounter` it.
 An increment is never executed twice because of a retransmission, and when the

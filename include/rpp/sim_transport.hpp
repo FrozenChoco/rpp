@@ -10,6 +10,7 @@ namespace rpp {
 // Fault applied to ONE sent frame.
 struct FaultAction {
     bool drop = false;
+    bool corrupt = false;     // flip one copy or payload field
     uint8_t copies = 1;       // total deliveries (>1 => duplicates); capped at 4
     uint32_t delay_ms = 0;    // extra delay of first copy
     uint32_t dup_gap_ms = 0;  // each further copy is this much later than the previous
@@ -20,12 +21,13 @@ struct RandomFaults {
     uint32_t seed = 1;
     uint16_t loss_permille = 0;
     uint16_t dup_permille = 0;
+    uint16_t corrupt_permille = 0;
     uint32_t min_delay_ms = 0;
     uint32_t max_delay_ms = 0;
 };
 
 struct ChannelStats {
-    uint32_t sent = 0, dropped = 0, duplicated = 0, delivered = 0, overflowed = 0;
+    uint32_t sent = 0, dropped = 0, duplicated = 0, delivered = 0, overflowed = 0, corrupted = 0;
 };
 
 // One direction of the link.
