@@ -18,6 +18,8 @@ Frame Peripheral::execute(const Frame& req) {
 }
 
 bool Peripheral::on_request(const Frame& req, Frame& rsp) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
     if (req.type != FrameType::Request) return false;
 
     if (has_last_ && req.seq == last_seq_) {
@@ -37,6 +39,16 @@ bool Peripheral::on_request(const Frame& req, Frame& rsp) {
     has_last_ = true;
     rsp = last_rsp_;
     return true;
+}
+
+uint32_t Peripheral::counter() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return counter_;
+}
+
+PeripheralStats Peripheral::stats() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return stats_;
 }
 
 void Peripheral::service(ITransport& port, TimeMs now) {

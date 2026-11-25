@@ -1,6 +1,7 @@
 // Peripheral-side command processor with at-most-once execution.
 #pragma once
 #include "rpp/protocol.hpp"
+#include <mutex>
 
 namespace rpp {
 
@@ -18,8 +19,8 @@ public:
     // Drain all requests deliverable at `now` and send the responses.
     void service(ITransport& port, TimeMs now);
 
-    uint32_t counter() const { return counter_; }
-    const PeripheralStats& stats() const { return stats_; }
+    uint32_t counter() const;
+    PeripheralStats stats() const;
 
 private:
     Frame execute(const Frame& req);
@@ -29,6 +30,7 @@ private:
     Seq last_seq_ = 0;
     Frame last_rsp_;  // response to last_seq_, replayed for duplicates
     PeripheralStats stats_;
+    mutable std::mutex mutex_;
 };
 
 }  // namespace rpp

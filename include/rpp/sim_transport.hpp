@@ -2,6 +2,7 @@
 // Fixed-size storage, no heap, deterministic (seeded PRNG + scripted faults).
 #pragma once
 #include <cstddef>
+#include <mutex>
 #include "rpp/protocol.hpp"
 
 namespace rpp {
@@ -39,8 +40,8 @@ public:
     // Scripted faults are consumed one per sent frame, FIFO, before random faults.
     bool push_fault(const FaultAction& a);
     void set_random(const RandomFaults& r);
-    void set_base_latency(uint32_t ms) { base_latency_ = ms; }
-    const ChannelStats& stats() const { return stats_; }
+    void set_base_latency(uint32_t ms);
+    ChannelStats stats() const;
 
 private:
     struct Entry {
@@ -62,6 +63,7 @@ private:
     uint32_t order_ = 0;
     uint32_t base_latency_ = 1;
     ChannelStats stats_;
+    mutable std::mutex mutex_;
 };
 
 // Endpoint view: sends on one channel, receives from the other.

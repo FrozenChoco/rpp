@@ -2,6 +2,7 @@
 // Non-blocking: call begin(), then poll() periodically until done().
 #pragma once
 #include "rpp/protocol.hpp"
+#include <mutex>
 
 namespace rpp {
 
@@ -48,10 +49,10 @@ public:
     // Process received frames and timers. Call at least once per millisecond tick.
     void poll(TimeMs now);
 
-    bool pending() const { return state_ == State::Pending; }
-    bool done() const { return state_ == State::Done; }
-    const TxResult& result() const { return result_; }
-    const HostStats& stats() const { return stats_; }
+    bool pending() const;
+    bool done() const;
+    TxResult result() const;
+    HostStats stats() const;
 
     static bool is_idempotent(Command c) { return c == Command::ReadCounter; }
 
@@ -70,6 +71,7 @@ private:
     TimeMs started_ = 0, deadline_ = 0;
     TxResult result_;
     HostStats stats_;
+    mutable std::mutex mutex_;
 };
 
 }  // namespace rpp

@@ -2,6 +2,16 @@
 
 namespace rpp {
 
+void Channel::set_base_latency(uint32_t ms) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    base_latency_ = ms;
+}
+
+ChannelStats Channel::stats() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return stats_;
+}
+
 uint32_t Channel::rand32() {  // xorshift32
     uint32_t x = rng_;
     x ^= x << 13; x ^= x >> 17; x ^= x << 5;
@@ -14,11 +24,13 @@ uint32_t Channel::rand_range(uint32_t lo, uint32_t hi) {
 }
 
 void Channel::set_random(const RandomFaults& r) {
+    std::lock_guard<std::mutex> lock(mutex_);
     rnd_ = r;
     rng_ = r.seed ? r.seed : 1;
 }
 
 bool Channel::push_fault(const FaultAction& a) {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (script_count_ == kScriptCapacity) return false;
     script_[(script_head_ + script_count_) % kScriptCapacity] = a;
     ++script_count_;
@@ -56,6 +68,7 @@ void Channel::enqueue(const Frame& f, TimeMs at) {
 }
 
 void Channel::send(const Frame& f, TimeMs now) {
+    std::lock_guard<std::mutex> lock(mutex_);
     ++stats_.sent;
     FaultAction a = next_action();
     if (a.drop) { ++stats_.dropped; return; }
@@ -66,6 +79,7 @@ void Channel::send(const Frame& f, TimeMs now) {
 }
 
 bool Channel::receive(Frame& out, TimeMs now) {
+    std::lock_guard<std::mutex> lock(mutex_);
     Entry* best = nullptr;
     for (Entry& e : q_) {
         if (!e.used || !time_reached(now, e.deliver_at)) continue;

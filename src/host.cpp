@@ -23,6 +23,7 @@ Host::Host(ITransport& port, const HostConfig& cfg)
 }
 
 bool Host::begin(Command cmd, TimeMs now) {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (state_ == State::Pending) return false;
     cur_cmd_ = cmd;
     cur_seq_ = next_seq_++;
@@ -51,7 +52,28 @@ void Host::finish(Outcome o, TimeMs now) {
     state_ = State::Done;
 }
 
+bool Host::pending() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return state_ == State::Pending;
+}
+
+bool Host::done() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return state_ == State::Done;
+}
+
+TxResult Host::result() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return result_;
+}
+
+HostStats Host::stats() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return stats_;
+}
+
 void Host::poll(TimeMs now) {
+    std::lock_guard<std::mutex> lock(mutex_);
     // 1. Responses first, so one arriving exactly at the deadline still counts.
     Frame f;
     while (port_.receive(f, now)) {
